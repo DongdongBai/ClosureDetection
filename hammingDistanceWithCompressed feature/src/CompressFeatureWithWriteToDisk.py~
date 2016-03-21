@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+# coding=utf-8
+import numpy as np
+class CompressFeature(object):
+    def __init__(self,layerName):
+        self.layerName=layerName
+        self.compressedFeature=None
+    def FeatureCompress(self):
+        f = file("/home/bdd/Desktop/ClosureDetectionProject/EuclideanDistanceWithOrignialFeature/data/"+self.layerName+".npy", "a+b")
+        originalFeature=np.load(f)
+        getFeatureTimes=1
+        while getFeatureTimes<2474:
+            tmpFeature=np.load(f)
+            originalFeature=np.vstack((originalFeature,tmpFeature))
+            getFeatureTimes=getFeatureTimes+1;
+        f.close()
+        print "The original feature of (%s) has been read!" %(self.layerName)
+        randomArray=np.random.normal(0.0,1,(9216,1024))
+        self.compressedFeature=originalFeature.dot(randomArray)
+        print "The compressed feature's shape is %s"  %(str(self.compressedFeature.shape))
+    def WriteCompressedFeature(self):
+            f = file("../data/compressedFeature_"+self.layerName+".npy", "a+b")
+            np.save(f,self.compressedFeature)
+            f.close()
+            print "The compressed feature of (%s) has been write to disk"  %self.layerName
+
+
+
+
+
