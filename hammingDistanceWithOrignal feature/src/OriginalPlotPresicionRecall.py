@@ -7,10 +7,12 @@ import scipy.io as sio
 
 
 class PlotPrecisionRecall(object):
-    def __init__(self,layerName):
+    def __init__(self,layerName,orignalDim,L):
         self.layerName=layerName
+        self.orignalDim=orignalDim
+        self.L=L
     def LoadHammingDistance(self):
-        self.Distance=np.loadtxt("hammingDistance_"+self.layerName+".txt",dtype='int') 
+        self.Distance=np.loadtxt("../data/Original_HammingDistance_"+self.layerName+"_"+str(self.orignalDim)+".txt") 
 #         f = file("hammingDistance_"+self.layerName+".npy", "a+b")
 #         self.Distance=np.load(f)
 #         f.close()
@@ -18,19 +20,19 @@ class PlotPrecisionRecall(object):
     def FindMaxAndMinDistance(self):
         DistanceCopy = self.Distance.copy()  
         self.MaxDistance=DistanceCopy.max()
-        print "max distance is (%d)"  %self.MaxDistance
+        print "max distance is (%f)"  %self.MaxDistance
         Index=DistanceCopy<0
         DistanceCopy[Index]=1000000
         self.MinDistance=DistanceCopy.min()
-        print "min distance is (%d)"  %self.MinDistance
+        print "min distance is (%f)"  %self.MinDistance
 
     def PlotPrecisionRecall(self):
-        matfn="/home/bdd/Desktop/src_code2/CityCentreGroundTruth.mat"
+        matfn="/home/bdd/Desktop/ClosureDetectionProject/EuclideanDistanceWithOrignialFeature/data/CityCentreGroundTruth.mat"
         data=sio.loadmat(matfn)  
         groudtruth=data['truth']
         groudtruth=np.array(groudtruth)
     
-        threshold=np.arange(self.MinDistance,self.MaxDistance,10)
+        threshold=np.linspace(self.MinDistance,self.MaxDistance,30)
     
         samplePointNum=len(threshold)
 
@@ -50,13 +52,14 @@ class PlotPrecisionRecall(object):
 
         dim=self.Distance.shape[0]
         samplePointIndex=0
+        erroTPIndex=0
         for D in threshold:
 #             print samplePointIndex
             correspondence=np.zeros(self.Distance.shape)
-            j=41
+            j=self.L+1
             while j<dim:
-                temp=self.Distance[j][0:j-40].argsort()
-                if self.Distance[j][temp[0]]<D:
+                temp=self.Distance[j][0:j-self.L].argsort()
+                if self.Distance[j][temp[0]]<=D:
                     correspondence[j][temp[0]]=1
                 j=j+1
             
@@ -80,22 +83,36 @@ class PlotPrecisionRecall(object):
             if TP[samplePointIndex]==0:
                 Precison[samplePointIndex]=0
                 Recall[samplePointIndex]=0
+                erroTPIndex=erroTPIndex+1
             else:   
                 Precison[samplePointIndex]=float(TP[samplePointIndex])/(TP[samplePointIndex]+FP[samplePointIndex])*100
                 Recall[samplePointIndex]=float(TP[samplePointIndex])/(TP[samplePointIndex]+FN[samplePointIndex])*100
             samplePointIndex=samplePointIndex+1
-      
-        plt.title(self.layerName)  
-        plt.plot(Recall,Precison) 
-        plt.savefig('Precision_Recall_'+self.layerName+'.png', dpi=120)
-        plt.show()
+        
+        self.precision=Precison[erroTPIndex:]
+        self.recall=Recall[erroTPIndex:]
+        PrecisonRecall=np.vstack((Precison,Recall))
+        PrecisonRecall=PrecisonRecall.T
+
+        np.savetxt("../data/Original_precison_recall"+self.layerName+"_"+str(self.orignalDim)+"L="+str(self.L)+".txt", PrecisonRecall, fmt="%d") #改为保存为整数
+        
+        plt.figure(0)
+        plt.title(self.layerName+"_origanl"+str(self.orignalDim))  
+        plt.xlabel("recall")
+        plt.ylabel("precision")
+
+        plt.xlim(0,100)
+        plt.ylim(0,100)
+        line=plt.plot(Recall[erroTPIndex:],Precison[erroTPIndex:]) 
+        plt.legend((line), (self.layerName,))
+        plt.savefig('../plot/Orignal_Precision_Recall_'+self.layerName+'_'+str(self.orignalDim)+"L="+str(self.L)+'.eps')
+        plt.close()
+#         plt.show()
+        
+# conv3Plot=PlotPrecisionRecall('pool5',9216,40)
+# conv3Plot.LoadHammingDistance()
+# conv3Plot.FindMaxAndMinDistance()
+# conv3Plot.PlotPrecisionRecall()       
+         
         
         
-        
-        
-        
-        
-conv3Plot=PlotPrecisionRecall('conv3')
-conv3Plot.LoadHammingDistance()
-conv3Plot.FindMaxAndMinDistance()
-conv3Plot.PlotPrecisionRecall()

@@ -7,10 +7,11 @@ import scipy.io as sio
 
 
 class PlotPrecisionRecall(object):
-    def __init__(self,layerName,orignalDim,CompressedDim):
+    def __init__(self,layerName,orignalDim,CompressedDim,L):
         self.layerName=layerName
         self.orignalDim=orignalDim
         self.CompressedDim=CompressedDim
+        self.L=L
     def LoadHammingDistance(self):
         self.Distance=np.loadtxt("../data/compressed_HammingDistance_"+self.layerName+"_"+str(self.orignalDim)+" to "+str(self.CompressedDim)+".txt",dtype='int') 
 #         f = file("hammingDistance_"+self.layerName+".npy", "a+b")
@@ -56,9 +57,9 @@ class PlotPrecisionRecall(object):
         for D in threshold:
 #             print samplePointIndex
             correspondence=np.zeros(self.Distance.shape)
-            j=41
+            j=self.L+1
             while j<dim:
-                temp=self.Distance[j][0:j-40].argsort()
+                temp=self.Distance[j][0:j-self.L].argsort()
                 if self.Distance[j][temp[0]]<=D:
                     correspondence[j][temp[0]]=1
                 j=j+1
@@ -88,19 +89,22 @@ class PlotPrecisionRecall(object):
                 Precison[samplePointIndex]=float(TP[samplePointIndex])/(TP[samplePointIndex]+FP[samplePointIndex])*100
                 Recall[samplePointIndex]=float(TP[samplePointIndex])/(TP[samplePointIndex]+FN[samplePointIndex])*100
             samplePointIndex=samplePointIndex+1
+        
         PrecisonRecall=np.vstack((Precison,Recall))
-        np.savetxt("../data/compressed_precison_recall"+self.layerName+"_"+str(self.orignalDim)+" to "+str(self.CompressedDim)+".txt", PrecisonRecall, fmt="%d") #改为保存为整数
-
+        PrecisonRecall=PrecisonRecall.T
+        np.savetxt("../data/compressed_precison_recall"+self.layerName+"_"+str(self.orignalDim)+" to "+str(self.CompressedDim)+"L="+str(self.L)+".txt", PrecisonRecall, fmt="%d") #改为保存为整数
+        
+        plt.figure(0)
         plt.title(self.layerName+"_compress"+str(self.orignalDim)+" to "+str(self.CompressedDim))  
         plt.xlabel("recall")
         plt.ylabel("precision")
         plt.xlim(0,100)
         plt.ylim(0,100)
         plt.plot(Recall[erroTPIndex:],Precison[erroTPIndex:]) 
-        plt.savefig('../plot/Compressed_Precision_Recall_'+self.layerName+str(self.orignalDim)+" to "+str(self.CompressedDim)+'.png', dpi=240)
-        plt.show()
-        
-# conv3Plot=PlotPrecisionRecall('pool5',9216,1024)
+        plt.savefig('../plot/Compressed_Precision_Recall_'+self.layerName+"_"+str(self.orignalDim)+" to "+str(self.CompressedDim)+"L="+str(self.L)+'.png', dpi=240)
+#         plt.show()
+        plt.close()
+# conv3Plot=PlotPrecisionRecall('pool5',9216,1024,40)
 # conv3Plot.LoadHammingDistance()
 # conv3Plot.FindMaxAndMinDistance()
 # conv3Plot.PlotPrecisionRecall()       
